@@ -49,6 +49,7 @@ jobs:
       # Deploy the application (update manifest paths as needed).
       - name: Deploy to Kubernetes
         run: |
+          kubectl cluster-info
           kubectl apply -f k8s/deployment-wisecow-app.yml
           kubectl apply -f k8s/service-wisecow-app.yml
 
