@@ -41,10 +41,23 @@ jobs:
         uses: actions/checkout@v3
 
       # Set up Kubernetes credentials using secrets.
+      # - name: Set up Kubeconfig
+      #   run: |
+      #     echo "${{ secrets.KUBECONFIG }}" > kubeconfig
+      #     export KUBECONFIG=$(pwd)/kubeconfig
+
       - name: Set up Kubeconfig
         run: |
           echo "${{ secrets.KUBECONFIG }}" > kubeconfig
-          export KUBECONFIG=$(pwd)/kubeconfig
+        env:
+          KUBECONFIG: ${{ github.workspace }}/kubeconfig
+      
+       # ADDING THE DEBUG STEP HERE
+      - name: Debug Cluster Connection
+        run: kubectl get nodes
+        env:
+          KUBECONFIG: ${{ github.workspace }}/kubeconfig
+
 
       # Deploy the application (update manifest paths as needed).
       - name: Deploy to Kubernetes
@@ -52,13 +65,19 @@ jobs:
           kubectl cluster-info
           kubectl apply -f k8s/deployment-wisecow-app.yml
           kubectl apply -f k8s/service-wisecow-app.yml
+        env:
+          KUBECONFIG: ${{ github.workspace }}/kubeconfig
 
       # Ensure cert-manager is running for TLS.
       - name: Verify TLS cert-manager
         run: |
           kubectl get pods -n cert-manager
+        env:
+          KUBECONFIG: ${{ github.workspace }}/kubeconfig
 
       # Apply TLS certificate manifest (update paths as needed).
       - name: Apply TLS cert
         run: |
           kubectl apply -f k8s/tls-certificate.yaml
+        env:
+          KUBECONFIG: ${{ github.workspace }}/kubeconfig
