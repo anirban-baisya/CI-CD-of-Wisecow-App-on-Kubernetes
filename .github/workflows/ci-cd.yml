@@ -49,8 +49,8 @@ jobs:
       # Deploy the application (update manifest paths as needed).
       - name: Deploy to Kubernetes
         run: |
-          kubectl apply -f deployment-wisecow-app.yml
-          kubectl apply -f service-wisecow-app.yml
+          kubectl apply -f k8s/deployment-wisecow-app.yml
+          kubectl apply -f k8s/service-wisecow-app.yml
 
       # Ensure cert-manager is running for TLS.
       - name: Verify TLS cert-manager
@@ -60,4 +60,4 @@ jobs:
       # Apply TLS certificate manifest (update paths as needed).
       - name: Apply TLS cert
         run: |
-          kubectl apply -f tls-certificate.yaml
+          kubectl apply -f k8s/tls-certificate.yaml
