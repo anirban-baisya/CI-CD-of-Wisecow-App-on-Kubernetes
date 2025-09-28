@@ -30,7 +30,7 @@ spec:
   ports:
     # Accept traffic sent to port 8080
     - protocol: TCP
-      port: 8080
+      port: 80  # default HTTP port (80) so if we provide port like 8080 then we need to provide the port number in the url while accessing the application ex. http://<minikube-ip>:8080)
       targetPort: 4499
 
   type: LoadBalancer  # Type of service we want to create. so that it can be accessed from outside the cluster
