@@ -58,7 +58,6 @@ jobs:
         run: |
           kubectl cluster-info
           kubectl apply -f k8s/deployment-wisecow-app.yml
-          kubectl apply -f k8s/service-wisecow-app.yml
         env:
           KUBECONFIG: ${{ github.workspace }}/kubeconfig
 
