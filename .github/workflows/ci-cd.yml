@@ -1,30 +1,26 @@
-name: CI/CD Pipeline - Wisecow App  #giving name to the pipeline
+name: CI/CD Pipeline - Wisecow App
 
 on:
   push:
     branches:
-      - main # Trigger workflow on changes to main branch.
+      - main
 
 jobs:
-  build-and-push: #defining any name of the job ex. build-and-push, test, deploy
-    runs-on: ubuntu-latest  #defining OS and run the pipeline on ubuntu-latest
+  build-and-push:
+    runs-on: ubuntu-latest
     steps:
-      # Checkout code from the repository.
-      - name: Checkout code # defining any name of the step ex. Checkout code, Login to Docker Hub
+      - name: Checkout code
         uses: actions/checkout@v3
 
-      # Log in to Docker Hub using secrets key.
       - name: Login to Docker Hub
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      # Set up Docker Buildx for advanced build functionality.
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      # Build and push the Docker image to your registry.
       - name: Build & Push Docker image
         uses: docker/build-push-action@v6
         with:
@@ -36,30 +32,28 @@ jobs:
     runs-on: ubuntu-latest
     needs: build-and-push
     steps:
-      # Checkout code for deployment manifests.
       - name: Checkout manifests
         uses: actions/checkout@v3
 
-      # Set up Kubernetes credentials using secrets.
-      # - name: Set up Kubeconfig
-      #   run: |
-      #     echo "${{ secrets.KUBECONFIG }}" > kubeconfig
-      #     export KUBECONFIG=$(pwd)/kubeconfig
+      # NEW: Set up AWS credentials
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v3
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
 
       - name: Set up Kubeconfig
         run: |
           echo "${{ secrets.KUBECONFIG }}" > kubeconfig
         env:
           KUBECONFIG: ${{ github.workspace }}/kubeconfig
-      
-       # ADDING THE DEBUG STEP HERE
+
       - name: Debug Cluster Connection
         run: kubectl get nodes
         env:
           KUBECONFIG: ${{ github.workspace }}/kubeconfig
 
-
-      # Deploy the application (update manifest paths as needed).
       - name: Deploy to Kubernetes
         run: |
           kubectl cluster-info
@@ -68,16 +62,12 @@ jobs:
         env:
           KUBECONFIG: ${{ github.workspace }}/kubeconfig
 
-      # Ensure cert-manager is running for TLS.
       - name: Verify TLS cert-manager
-        run: |
-          kubectl get pods -n cert-manager
+        run: kubectl get pods -n cert-manager
         env:
           KUBECONFIG: ${{ github.workspace }}/kubeconfig
 
-      # Apply TLS certificate manifest (update paths as needed).
       - name: Apply TLS cert
-        run: |
-          kubectl apply -f k8s/tls-certificate.yaml
+        run: kubectl apply -f k8s/tls-certificate.yaml
         env:
           KUBECONFIG: ${{ github.workspace }}/kubeconfig
