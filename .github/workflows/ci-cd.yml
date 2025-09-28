@@ -66,7 +66,7 @@ jobs:
         env:
           KUBECONFIG: ${{ github.workspace }}/kubeconfig
 
-      - name: Apply TLS cert
-        run: kubectl apply -f k8s/tls-certificate.yaml
-        env:
-          KUBECONFIG: ${{ github.workspace }}/kubeconfig
+      # - name: Apply TLS cert
+      #   run: kubectl apply -f k8s/tls-certificate.yaml
+      #   env:
+      #     KUBECONFIG: ${{ github.workspace }}/kubeconfig
