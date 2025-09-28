@@ -32,3 +32,5 @@ spec:
     - protocol: TCP
       port: 8080
       targetPort: 4499
+
+  type: LoadBalancer  # Type of service we want to create. so that it can be accessed from outside the cluster

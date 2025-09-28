@@ -60,7 +60,12 @@ jobs:
           kubectl apply -f k8s/deployment-wisecow-app.yml
         env:
           KUBECONFIG: ${{ github.workspace }}/kubeconfig
-
+      
+      - name: Show service info
+        run: kubectl get svc service-wisecow-app -o wide
+        env:
+          KUBECONFIG: ${{ github.workspace }}/kubeconfig
+          
       - name: Verify TLS cert-manager
         run: kubectl get pods -n cert-manager
         env:
