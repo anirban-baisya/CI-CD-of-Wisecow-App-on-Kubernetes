@@ -9,18 +9,25 @@ jobs:
   build-and-push:
     runs-on: ubuntu-latest
     steps:
+      # Step 1: Checkout code from my repository
+      # - This step pulls the code so our workflow can use it.
       - name: Checkout code
         uses: actions/checkout@v3
 
+      # Step 2: Login to Docker Hub using secrets
+      # - Make sure to set DOCKER_USERNAME and DOCKER_PASSWORD in GitHub Secrets!
       - name: Login to Docker Hub
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
+      # Step 3: Set up Docker Buildx for advanced Docker builds
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
+      # Step 4: Build and push our Docker image to Docker Hub
+      # - The image is tagged as 'wisecow-app:latest'
       - name: Build & Push Docker image
         uses: docker/build-push-action@v6
         with:
@@ -32,10 +39,13 @@ jobs:
     runs-on: ubuntu-latest
     needs: build-and-push
     steps:
+      # Step 5: Checkout deployment manifests (YAML files for Kubernetes)
       - name: Checkout manifests
         uses: actions/checkout@v3
 
-      # NEW: Set up AWS credentials
+      # Step 6: Configure AWS credentials for EKS access
+      # - Make sure to set AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_REGION in GitHub Secrets!
+      # - This is required for kubectl to talk to our EKS cluster.
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v3
         with:
@@ -43,17 +53,25 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
+      # Step 7: Set up kubeconfig
+      # - The KUBECONFIG secret must contain our EKS kubeconfig file.
+      # - This lets kubectl know how to connect to our cluster.
       - name: Set up Kubeconfig
         run: |
           echo "${{ secrets.KUBECONFIG }}" > kubeconfig
         env:
           KUBECONFIG: ${{ github.workspace }}/kubeconfig
 
+      # Step 8: Debug connection to EKS cluster
+      # - This helps verify kubectl can see our nodes.
       - name: Debug Cluster Connection
         run: kubectl get nodes
         env:
           KUBECONFIG: ${{ github.workspace }}/kubeconfig
 
+      # Step 9: Deploy our app to EKS
+      # - Applies both Deployment and Service manifests.
+      # - If we change our service type to LoadBalancer, EKS will create an external IP for you!
       - name: Deploy to Kubernetes
         run: |
           kubectl cluster-info
@@ -61,17 +79,38 @@ jobs:
         env:
           KUBECONFIG: ${{ github.workspace }}/kubeconfig
       
+      # Step 10: Show our service info after deployment
+      # - This prints the EXTERNAL-IP (URL) to our workflow logs.
+      # - Wait for EXTERNAL-IP to be assigned (can take a few minutes).
+      # - Access our app at http://EXTERNAL-IP:PORT (e.g., http://xxxx.elb.amazonaws.com:8080)
+      # - If you want to access it without a port, set 'port: 80' in our Service manifest.
       - name: Show service info
         run: kubectl get svc service-wisecow-app -o wide
         env:
           KUBECONFIG: ${{ github.workspace }}/kubeconfig
           
+      # Step 11: Verify cert-manager is running (for TLS, optional)
+      # - If you don't use TLS/Ingress, you can skip this step.
       - name: Verify TLS cert-manager
         run: kubectl get pods -n cert-manager
         env:
           KUBECONFIG: ${{ github.workspace }}/kubeconfig
 
+      # Step 12: (Optional) Apply TLS certificate if you use HTTPS/Ingress
+      # - Uncomment and add our tls-certificate.yaml if you need HTTPS.
+      # - You don't need this if you only use a LoadBalancer service and HTTP.
       # - name: Apply TLS cert
       #   run: kubectl apply -f k8s/tls-certificate.yaml
       #   env:
       #     KUBECONFIG: ${{ github.workspace }}/kubeconfig
+
+# ---------------------------
+# Additional Guide (based on issues solved):
+# - Use Service type LoadBalancer for public access on EKS.
+# - Set 'port: 80' in our Service manifest to access our site without specifying a port.
+# - Make sure our app listens on the same targetPort as defined in the Service.
+# - Always configure security groups to allow traffic on our service port (e.g., 80 or 8080).
+# - The EXTERNAL-IP printed in the logs is our live site URL!
+# - For HTTPS, use cert-manager and Ingress; for HTTP, LoadBalancer is enough.
+# - Use kubectl get svc to debug and check our public endpoint.
+# ---------------------------
